@@ -1,0 +1,59 @@
+# Insurance contract optimization
+
+This project is aimed at optimizing the profit of an insurance company by determining the best segmentation of risk (represented by probability θ) and indemnity amounts (denoted R). 
+The problem is approached for various cases — one contract, two contracts, and N contracts.
+
+The goal is to maximize the profit by adjusting the risk probability thresholds and indemnity amounts for each contract, considering different risk segments and their associated costs.
+
+## Project structure
+The project consists of several modules to handle different numbers of contracts:
+- `one_contract.py`: Solves the problem for a single insurance contract.
+- `two_contracts.py`: Solves the problem for two insurance contracts.
+- `N_contracts.py`: Solves the problem for N insurance contracts, where N is a user-specified number.
+- `config.py`: Contains parameters used throughout the project like a, b, L, lambda_, R_min, R_max, and others.
+
+All the plots are stored in the folder `plots`.
+
+Remark : the user will notice that the pipeline used in `two_contracts.py` and `N_contracts.py` is very similar. 
+While two_contracts.py could technically be removed, it serves as a useful reference for the steps involved in solving the N_contracts problem.
+
+## Installation
+### Prerequisites
+- Python 3.8+
+- `pip` installed
+
+### Steps
+1. Clone the repository:
+```sh
+git clone 
+```
+
+2. Install dependencies :
+```sh
+pip install -r requirements.txt
+```
+
+3. Check that the project is working correctly, run:
+```sh
+python3 main.py one_contract_problem
+```
+
+## Usage
+
+### To run the case with one contract
+
+Run the main script:
+```sh
+python3 main.py one_contract_problem
+```
+### To run the case with two contracts
+Run the main script:
+```sh
+python3 main.py two_contracts_problem
+```
+
+### To run the case with N contracts
+Run the main script (example with N=3):
+```sh
+python3 main.py N_contracts_problem --N 3
+```
