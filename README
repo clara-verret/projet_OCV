@@ -25,7 +25,8 @@ While two_contracts.py could technically be removed, it serves as a useful refer
 ### Steps
 1. Clone the repository:
 ```sh
-git clone 
+git clone https://github.com/clara-verret/projet_OCV.git
+cd projet_OCV
 ```
 
 2. Install dependencies :
