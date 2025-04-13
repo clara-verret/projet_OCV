@@ -11,11 +11,14 @@ The project consists of several modules to handle different numbers of contracts
 - `two_contracts.py`: Solves the problem for two insurance contracts.
 - `N_contracts.py`: Solves the problem for N insurance contracts, where N is a user-specified number.
 - `config.py`: Contains parameters used throughout the project like a, b, L, lambda_, R_min, R_max, and others.
+- Plots are saved in the `plots/` directory.
+- Logs are written to the `logs` directory, which is automatically created when running `N_contract.py`. The logging verbosity can be configured using the --loglevel option (see Usage below).
 
-All the plots are stored in the folder `plots`.
+Remark : Although `two_contracts.py`  is structurally very similar to `N_contracts.py`, it is kept as a standalone module to illustrate the intermediate steps of scaling from one to multiple contracts.
 
-Remark : the user will notice that the pipeline used in `two_contracts.py` and `N_contracts.py` is very similar. 
-While two_contracts.py could technically be removed, it serves as a useful reference for the steps involved in solving the N_contracts problem.
+Remark : For N = 6, the full optimization completes in ~4 seconds on a standard machine.
+
+Remark : When N=7, the optimization does not converge successfully because the \theta parameters violate the ascending order constraint.
 
 ## Installation
 ### Prerequisites
@@ -57,4 +60,10 @@ python3 main.py two_contracts_problem
 Run the main script (example with N=3):
 ```sh
 python3 main.py N_contracts_problem --N 3
+```
+
+### To change the log level
+Logging is implemented for `N_contracts.py` and defaults to INFO. To change the level (e.g., to WARNING, DEBUG, etc.):
+```sh
+python3 main.py N_contracts_problem --N 3 --loglevel WARNING
 ```

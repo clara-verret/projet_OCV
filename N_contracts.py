@@ -4,59 +4,87 @@ from matplotlib import pyplot as plt
 from config import a, b, L, R_min, R_max
 from two_contracts import profit_from_contract, A_segment, P_theta
 from scipy.optimize import LinearConstraint, differential_evolution
+import logging
+import time
 
 def profit_n_contracts(params, N):
-    """
-    Calculate total profit from N contracts.
-
-    Args:
-        params (array): [θ1, ..., θ_{N-1}, R1, ..., RN]
-        N (int): Number of contracts
-
-    Returns:
-        float: Total profit
-    """
-    # Extract and sort theta values properly
+    """Calculate total profit from N contracts."""
+    # Print parameter values for debugging
+    if np.any(np.isnan(params)) or np.any(np.isinf(params)):
+        logging.warning(f"WARNING: Input params contain NaN/Inf: {params}")
+        return -np.inf
+    
+    # Extract theta values
     thetas_internal = params[:N].copy()
     thetas = np.concatenate((thetas_internal, [1]))
     Rs = params[N:]
+    
     # Validate parameter values
     if any(th <= 0 or th >= 1 for th in thetas_internal):
+        logging.warning(f"WARNING: Invalid theta range: {thetas_internal}")
         return -np.inf
 
     # Check that thetas are in ascending order
     if not np.all(np.diff(thetas) > 0):
+        logging.warning(f"WARNING: Thetas not in ascending order: {thetas}")
         return -np.inf
-
+    
     total_profit = 0
     for i in range(N):
         θ_low = thetas[i]
         θ_high = thetas[i+1]
         R = Rs[i]
-        total_profit += profit_from_contract(θ_low, θ_high, R)
+        
+        # Check individual values before calculation
+        if np.isnan(θ_low) or np.isnan(θ_high) or np.isnan(R):
+            logging.warning(f"WARNING: NaN values in segment {i}: θ_low={θ_low}, θ_high={θ_high}, R={R}")
+            return -np.inf
+            
+        segment_profit = profit_from_contract(θ_low, θ_high, R)
+        
+        # Check for NaN/Inf in result
+        if np.isnan(segment_profit) or np.isinf(segment_profit):
+            logging.warning(f"WARNING: Invalid profit for segment {i}: {segment_profit}")
+            logging.warning(f"Parameters: θ_low={θ_low}, θ_high={θ_high}, R={R}")
+            return -np.inf
+            
+        total_profit += segment_profit
+    
+    # Final check on total profit
+    if np.isnan(total_profit) or np.isinf(total_profit):
+        logging.warning(f"WARNING: Invalid total profit: {total_profit}")
+        return -np.inf
+        
     return total_profit
 
 def optimize_n_contracts(N, x0=None):
-    """
-    Optimize N contracts.
-
-    Args:
-        N (int): Number of contracts
-        x0 (array, optional): Initial guess for [θ1,...,θ_{N-1}, R1,...,R{N-1}]
-
-    Returns:
-        tuple: (result, output_dict)
-    """
+    """Optimize N contracts."""
     if x0 is None:
-        # Create better initial guesses with clear separation
+        # Create initial guesses with clear separation
         θ_guesses = np.linspace(0.1, 0.9, N)
         R_guesses = np.linspace(R_min, R_max, N)
         x0 = np.concatenate((θ_guesses, R_guesses))
-
+    
+    # Add debugging wrapper around objective function
+    call_count = [0]
+    def debug_objective(x):
+        call_count[0] += 1
+        if call_count[0] % 100 == 0:
+            logging.info(f"Optimization iteration {call_count[0]}")
+            
+        result = -profit_n_contracts(x, N)
+        
+        # Check for invalid result
+        if np.isnan(result) or np.isinf(result):
+            logging.error(f"Invalid result at iteration {call_count[0]}")
+            logging.error(f"Parameters: {x}")
+            
+        return result
+    
     # Set appropriate bounds
-    bounds = [(0.001, 0.999)] * N + [(R_min, R_max)] * N 
+    bounds = [(0.01, 0.99)] * N + [(R_min, R_max)] * N 
 
-    # Constraint: θ1 < θ2
+    # Constraint: θ1 < θ2 < ... < θN-1 < 1
     A = []
     epsilon = 1e-4
     total_dim = 2*N
@@ -67,18 +95,46 @@ def optimize_n_contracts(N, x0=None):
         row[i + 1] = 1
         A.append(row)
 
+    # Add explicit lower bound constraints for thetas
+    for i in range(N):
+        row = [0] * total_dim
+        row[i] = 1  # θᵢ > 0.01
+        A.append(row)
+
+    # Add explicit upper bound constraints for thetas
+    for i in range(N):
+        row = [0] * total_dim
+        row[i] = -1  # -θᵢ > -0.99 (equivalent to θᵢ < 0.99)
+        A.append(row)
+
     A = np.array(A)
-    lb = np.full(A.shape[0], epsilon)
+    
+    # Set lower bounds for all constraints
+    lb = np.zeros(A.shape[0])
+    lb[:N-1] = epsilon  # For ordering constraints
+    lb[N-1:2*N-1] = 0.01  # Lower bounds for thetas
+    lb[2*N-1:] = -0.99  # Upper bounds for thetas (expressed as lower bounds)
+    
     ub = np.full(A.shape[0], np.inf)
 
     linear_constraint = LinearConstraint(A, lb, ub)
 
-    result = differential_evolution(
-        func = lambda x: -profit_n_contracts(x,N), 
-        x0 = x0, 
-        bounds=bounds,
-        constraints=(linear_constraint,)
-    )
+    # Try-except to catch optimization errors
+    try:
+        result = differential_evolution(
+            func=debug_objective, 
+            bounds=bounds,
+            constraints=(linear_constraint,),
+            maxiter=1000,
+            popsize=15,
+            tol=1e-5,
+            updating='deferred',  # Try different updating schemes
+        )
+    except Exception as e:
+        logging.error(f"Optimization error: {e}")
+        # Create a mock result object for error cases
+        from types import SimpleNamespace
+        result = SimpleNamespace(success=False, x=x0, fun=np.inf, message=str(e))
 
     output = {}
     if result.success:
@@ -121,6 +177,8 @@ def optimize_n_contracts(N, x0=None):
         print("Try with different initial values or optimization parameters.")
 
     return result, output
+
+############################## Plotting ############################
 
 def plot_n_contracts(output_n, output_single=None):
     """
@@ -235,8 +293,14 @@ def plot_n_contracts(output_n, output_single=None):
 
 ######################################## Main ########################################
 def main(N):
+    start_time = time.time()
+    logging.info(f"Starting optimization for {N} contracts...")
+    
     result, output = optimize_n_contracts(N)
     plot_n_contracts(output_n=output)
+    
+    elapsed_time = time.time() - start_time
+    logging.info(f"Optimization and plotting completed in {elapsed_time:.2f} seconds.")
 
 if __name__ == "__main__":
     main()

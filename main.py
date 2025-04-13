@@ -1,4 +1,6 @@
 import argparse
+import logging
+import os
 
 def run_one_contract_problem():
     from one_contract import main as run
@@ -21,7 +23,6 @@ if __name__ == "__main__":
         help="Choose the problem to solve",
     )
 
-    # Adding the N argument only when the user selects the N_contracts_problem
     parser.add_argument(
         "--N",
         type=int,
@@ -29,7 +30,24 @@ if __name__ == "__main__":
         required=False
     )
 
+    parser.add_argument(
+        "--loglevel",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Set logging verbosity level"
+    )
+
     args = parser.parse_args()
+
+    #Setup logging BEFORE anything else uses it
+    os.makedirs("logs", exist_ok=True)
+    logging.basicConfig(
+        level=getattr(logging, args.loglevel),
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler("logs/optimization.log", mode='w')
+        ]
+    )
 
     if args.problem == "one_contract_problem":
         run_one_contract_problem()
@@ -37,6 +55,6 @@ if __name__ == "__main__":
         run_two_contracts_problem()
     elif args.problem == "N_contracts_problem":
         if args.N is None:
-            print("You must specify the number of contracts using the --N argument")
+            logging.error("You must specify the number of contracts using the --N argument")
         else:
             run_N_contracts_problem(args.N)

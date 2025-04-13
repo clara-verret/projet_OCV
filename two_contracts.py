@@ -187,6 +187,7 @@ def optimize_two_contracts(x0=None):
     
     return result, output
 
+######################################## Plotting ##########################################
 def plot_two_contracts(output_two, output_single=None):
     """
     Create visualizations for the two-contract model
