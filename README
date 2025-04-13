@@ -62,6 +62,12 @@ Run the main script (example with N=3):
 python3 main.py N_contracts_problem --N 3
 ```
 
+### To run the case of continuous contract
+Run the main script (example with N=3):
+```sh
+python3 main.py continuous_contract_problem
+```
+
 ### To change the log level
 Logging is implemented for `N_contracts.py` and defaults to INFO. To change the level (e.g., to WARNING, DEBUG, etc.):
 ```sh
