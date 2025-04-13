@@ -14,12 +14,16 @@ def run_N_contracts_problem(N):
     from N_contracts import main as run
     run(N)
 
+def run_continuous_contract_problem():
+    from continous_contract import main as run
+    run()
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Insurance contract optimization")
 
     parser.add_argument(
         "problem",
-        choices=["one_contract_problem", "two_contracts_problem", "N_contracts_problem"],
+        choices=["one_contract_problem", "two_contracts_problem", "N_contracts_problem", "continuous_contract_problem"],
         help="Choose the problem to solve",
     )
 
@@ -58,3 +62,5 @@ if __name__ == "__main__":
             logging.error("You must specify the number of contracts using the --N argument")
         else:
             run_N_contracts_problem(args.N)
+    elif args.problem == "continuous_contract_problem":
+        run_continuous_contract_problem()
